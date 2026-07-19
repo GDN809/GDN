@@ -91,65 +91,45 @@ In other words, a new "branch" is generated from this point.<br>
 <img src="fig3.png" width="60%" height="60%">	
 <video width="320" height="320" controls> <source src="DDR1.mp4" type="video/mp4"  ></video>
 
-<h3>Recognition and Learning</h3>
+<h3>Recognition</h3>
 
-Once the “digit neuron” objects for digits 0 through 9 have been created, enter the digit to be recognized 
-into the digit input field to perform character recognition. At this point, a target character is randomly 
-selected from the 10,000-item MNIST database, and its image pixels are displayed within the rectangle to the 
-right of the input field and on the x-y plane in 3D space.
+Once the "digit" neurons for 0 through 9 have been created, input the digit to be recognized. 
+A target character is randomly selected from the MNIST database—which contains 10,000 data items—
+and its image is displayed to the right of the input field and on the x-y plane of a 3D space.
 <br><br>
  
 GDN compares each learned character with the target character using the following procedure.<br>
 <br>
-a) If a target character is present on a pixel in the training data, the information from the connected synapses 
-travels backward through the list of growth points until it reaches one of the Layer 1 nodes. 
+a) If the pixels of the target character also exist on the pixels associated with a "digit" neuron, 
+the synaptic information reaches one of the nodes in Layer 1.< br>
+
 If the pixel value is 0.2 or greater, it is added to the corresponding Layer 1 node array as 
 excitation information; if it is less than 0.2, it is subtracted as inhibition information.<br>
  <br>
-b) If a target character pixel is located at a position not present in the training data, an inhibitory effect
-—which depends on the distance to the nearest synapse node in the training data—
-is generated as negative information, and the value of the Layer 1 node array is subtracted.<br>
+b) If the pixels of the object to be recognized are not present on a "digit" neuron, 
+an inhibitory effect manifests as negative information at the nearest synapse node. 
+In this case as well, the values of the node array in Layer 1 are decremented.<br>
 <br>
-c) Perform the above operation for all grid points, and sum all the values in the Layer1 nod array. 
-This becomes the output value from each “digital neuron” cell body.<br>
+c) Perform the above operation for all grid points and sum the values of the Layer 1 node array.
+This becomes the output value from the cell body of each "digit" neuron.<br>
 <br> 
-d) The output values of Layer 1 nodes obtained from the recognition target represent, so to speak, 
-the sum of the similarity of the “branches.” Local differences—such as the absence of a “leaf” at the 
-position of a learned “leaf” or a “leaf” that is smaller than expected—reduce the values of the Layer 1 nodes, 
-thereby lowering the similarity. If an axon terminal is present at a position where a leaf should not be, 
-a subtraction occurs due to “inhibition.”<br>
+d) The output value obtained from the object of recognition represents, so to speak, the sum of the 
+similarities of the "branches." 
+Synaptic information indicating that a "leaf" is absent from the learned position, or that the "leaf" is small, 
+causes the value of the Layer 1 node to decrease. 
+Even when a pixel exists at a position where a "leaf" would not normally be present, subtraction occurs 
+due to "suppression.”<br>
 <br>
 <img src="fig41.GIF" width="60%" height="60%">
 
- 
-<h3>Recognition</h3>
-After reading five randomly selected characters from 0 to 9, input any digit (0 to 9). Again, a target
- character is randomly selected from the MNIST database and its image is displayed to the right of the
- input field and in the x-y plane of the 3D space.<br>
-Our model compares each character, learned as a dendrite-linked list, with the recognition target
- image as follows:<br><br>
- The image data to be recognized is displayed as a color temperature sphere on a 16x16 grid point on the
- xy plane, and this image is compared sequentially with all trained characters. The dendrites of trained
- characters are also connected to active grid points, and if the pixel value of the target image is 0.4
- (threshold) or higher, the following operations are performed:<br>
- i) A growing point connected to the tip of this axon can reach one of its layer 1 nodes by working backwards
- through the stored growing point list. This node is marked as reached and the total number of layer 1 nodes
- counter is incremented. ( The total number of layer 1 nodes varies depending on the letter, but can be
- between 10 and 30 )<br>
-ii) For every active lattice point, it is determined which layer 1 nodes it can reach, and if it is not a
- node that is already counted, the counter of the layer 1 node is incremented<br>
-iii) The above operation is performed for all lattice points of trained characters 0 to 9, and the number
- of activated layer 1 nodes is determined.<br><br>
- 
-The number of Layer 1 nodes reached by this target character is reduced by suppression in the following case:<br>
-If a pixel value in the trained character is 0 but is greater than 0 in the target, the difference represents
- the degree of dissimilarity. Therefore, the number of Layer 1 nodes reached is reduced by the amount of that
- pixel value due to suppression.<br><br>
-iv)The ratio of the values of the activated and inhibited Layer 1 nodes of the character to be
- recognized to the total number of Layer 1 nodes of the trained characters represents the similarity,
- and the character with the largest value is the recognition result.
-(The result is displayed in textArea.)<br><br>
-<img src="fig43.GIF" width="60%" height="60%">
+<br>
+
+The weighted sum of the ratios between the obtained Layer 1 nodes and the Layer 1 nodes of the learned characters 
+represents the similarity; the character with the highest value is the recognition result.
+(The result is displayed in the text area.)
+
+<br><br>
+
 
 
 <h3>Learning Misrecognized Digits</h3>
@@ -164,7 +144,9 @@ This causes the branches to “forks” or “prune.” As a result, the range o
 and the recognition rate rises to about 70% after approximately 100 trials (10 trials per digit). 
 <br><br>
 Misrecognitions at this stage tend to occur with highly “abnormal” shapes. Although the GDN assigns 
-only one neuron to each digit, it appears that it must also assign neurons to these “abnormal” shapes.
+only one br to each digit, it appears that it must also assign neurons to these “abnormal” shapes.<br>
+<img src="fig43.GIF" width="60%" height="60%">
+<br><br>
 
 <h3>How to use a dendrite network generation App for MNIST image recognition
 <br><br> ---- We apologize, but the ZIP file is scheduled to be released soon. ----</h3>

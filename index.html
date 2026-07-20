@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>dendritic neural network</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
  <style>
 	h1 {text-align: center;}
 	p {text-align: center;}
@@ -17,7 +18,8 @@
 </h1>
 <h2><p>
  Recognition of Handwritten MNIST Images Using GDN</h2></p>
- <div class="r">July 2026 @M.Amano</div>
+ <div class="r">July 2026 @M.Amano,@T.O.</div><br>
+ 
 In the networks used for deep learning, synaptic connections in the hidden layers are structured 
 as one-to-many mappings. <br>Therefore, generating an "appropriate probabilistic weight space" 
 for synaptic connections via backpropagation requires immense resources and time.
@@ -120,7 +122,7 @@ causes the value of the Layer 1 node to decrease.
 Even when a pixel exists at a position where a "leaf" would not normally be present, subtraction occurs 
 due to "suppression.”<br>
 <br>
-<img src="fig41.GIF" width="60%" height="60%">
+<img src="fig41.png" width="60%" height="60%">
 
 <br>
 
@@ -145,7 +147,8 @@ and the recognition rate rises to about 70% after approximately 100 trials (10 t
 <br><br>
 Misrecognitions at this stage tend to occur with highly “abnormal” shapes. Although the GDN assigns 
 only one br to each digit, it appears that it must also assign neurons to these “abnormal” shapes.<br>
-<img src="fig43.GIF" width="60%" height="60%">
+
+<img src="fig43.png" width="60%" height="60%">
 <br><br>
 
 <h3>How to use a dendrite network generation App for MNIST image recognition

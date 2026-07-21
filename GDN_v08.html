@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<!---------------------------------------------------------------------------------
+	Genating Neural Netwerk v0.8			July 2026
+						© 2026 bobie820g@gmail.com 	M.Amano & T.O.
+						Released under the MIT license
+						https://opensource.org/licenses/mit-license.php 
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.0.1/math.js"></script>
+			<script src="https://unpkg.com/mathjs@11.4.0/lib/browser/math.js"></script>
+-------------------------------------------------------------------------------------!>									
+<head>
+    <title>MNIST Generate Dendrite APP</title>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/initGrModel.js"></script>
+<script src="js/MNIST.js"></script>	
+<script src="js/mt.js"></script>
+
+</script>
+</head>
+<body> 
+
+ i) Load MNIST handwritten digits <br>
+  <font size="2">
+   LabelsFile( s10k-labels.bin )<br>
+  <input type="file" id="csvfile" onchange="handleLabelsFiles(this.files)" accept=".bin"><br>
+   ImageFile( t10k-images.bin )<br>
+  <input type="file" id="csvfile" onchange="handleImageFiles(this.files)" accept=".bin"><br><br>
+ <font size="4"> 
+ ii) Load training data<br></font>
+ 
+  <button id="Tr09" onclick="Train09()" > Train 0..9</button>
+    or  <button id="TrAl" onclick="TrainAll()" > Train All</button><br><br>
+  
+  <canvas id="digTA" width="48" height="48" 
+			style="position:absolute; top:180px; left:180px; border:1px solid;"></canvas>
+<font size="3"> 
+ iii) Input TestNo 
+  <input type="number" id="trNo"  size="1" min="0" max="9" value="0" /><br>or
+
+
+   <button  id="Cal" onclick="RcgAuto()" >Calc auto random 20 image</button> <br> 
+   Recognition result<br>
+   <textArea id="Res" cols="23" rows="13" bold></textArea><br><br>
+   
+ <div id="canvas-frame"><style>
+  div#canvas-frame{ position:absolute;top:60px;left:360px;width:1024px; height:512px; }
+ </style></div> 
+
+    <canvas id="digits" width="100" height="580" 
+	  style="position:absolute; top:60px; left:245px; border:1px solid;"></canvas>
+	<canvas id="rep" width="214" height="100" 
+	  style="position:absolute; top:574px; left:7px; border:1px solid;"></canvas>
+
+<script>
+  
+function Cell() {			// ****** Cell Object ******
+	this.cellNo = 0;
+	this.grp =  new Array( new THREE.Vector3( 0,0,0 ) ); 	// coodinate of grow point
+	this.grlink = [0];			// prev grk ( Grow point counter )
+	  //this.nodslk = new Array() 	// next target nodes link
+
+	  this.nods = new Array() 	// grk of nodes
+	  this.nodv = new Array()		// nod level
+	  this.nodw = new Array()		// nod level rec mod
+	  this.nodmt = new Array()	// grk connected to MT
+
+		this.nod1 = new Array()		// grk of layer1 node
+		this.nod1m = new Array()		// connected MT_number
+		this.nod1k = new Array()		// val of node1 index
+		this.nod1c = new Array()	
+		this.nod1v = new Array()
+		this.nod1w = new Array()
+		//this.nodspt = new Array() 	// dots array of nods index
+		this.outw = 0
+
+	  this.ndf = 0;				// node layer flag
+	  this.ndkv = 0;				// layer1 node counter
+	this.grk = 0; 				// gr counter  ( Grow point counter )
+	this.dmk = 0;				// nearest mt( MNIST axon Terminal ) number
+	 this.dmcp = new Array();		// grp connected to nearest mt
+	 this.dmck = new Array();		// mt No. connected
+
+	this.dmin = 0;				// min distance from mt
+	this.line = new Array();		// save the line obj
+	this.thrd = -0.2
+	
+	this.getv = function() {		// *** get vector and grow dendrite ***
+		var v = new THREE.Vector3, vv = new THREE.Vector3
+		var  sv, lv, nextk,  maxv, mx,my, sphV, lmatC = (this.cellNo)/10;
+
+		v = this.sumV( this.grp[this.grk] );		// grp[0] is the start point ( soma )
+		if  ( this.dmin > 0.005 ) {			// ---- gp is far from the MT 0.002----
+			v.normalize()
+			if ( this.grp.z< -0.2  ) { v.multiplyScalar(0.2) } else { v.multiplyScalar(0.02) }	//0.02
+				vv.addVectors( this.grp[this.grk],v);	
+				this.line[this.grk] = lineTo( this.grp[this.grk].x, this.grp[this.grk].y, this.grp[this.grk].z,
+												vv.x, vv.y, vv.z, lmatC )
+				this.line[this.grk].material.transparent = true
+
+					if ( this.ndf == 0 ) { this.grlink[ this.grk ] = this.grk-1 } 	 // set prev grk-1
+					if ( this.ndf == 1 ) { this.ndf = 0 }				// if new node, grk-1 is not prev grk
+				this.grk++;		 // next gr counter
+				this.grp[this.grk] = new THREE.Vector3; 
+				this.grp[this.grk] = this.grp[this.grk].addVectors( this.grp[this.grk-1],v ); 
+		}
+		else { 		// ---- gp is now near the MT ----
+			this.line[this.grk] = lineTo(  this.grp[this.grk].x, this.grp[this.grk].y, this.grp[this.grk].z,
+				h[this.dmk].x,  h[this.dmk].y, h[this.dmk].z,lmatC ); 	// line to MT
+			this.line[this.grk].material.transparent=true
+			mx = Math.floor( this.dmk/16 );  my = ( this.dmk%16 );
+					this.nodmt.push( this.grk )			// connected nod to MT					
+					//sphereVec( this.grp[this.grk],0.01, mtwA[this.cellNo][mx][my] )	//****** for debug ****
+					//hsl = 'hsl( 0, 100%,' + Math.floor(100-mtwA[ this.cellNo ][mx][my]*50)+'%)';
+					hsl = 'hsl( 0, 100%,100% )' 
+					mtsph[ this.cellNo ][mx][my].material.color.set(hsl)	// = new THREE.Color(hsl)
+					  //sphV = sphereVec( this.grp[this.grk-1],0.01, 0xff0000 ); 
+					  //this.nodspt.push( sphV );	
+			mt[this.dmk] = 0;					// update active MT map	
+			this.dmck.push( this.dmk ); 			// save the MT No
+			this.dmcp[this.dmk] = this.grk;		// this grk points to the MT
+			this.grlink[ this.grk ]=this.grk-1	// grlink must back to the last grk
+				this.nods.push(this.grk); this.nodv.push(0); this.nodw.push(0)
+				
+			maxv=0;		// search next gp
+			for ( let k=0; k<this.grk; k++ ) {
+				sv =this.sumV( this.grp[k] ); 	// sv is sum of distance from MTs 
+				lv = sv.lengthSq();				// lv is len of min sv
+				if ( lv>maxv ) { maxv = lv; nextk = k };	// min lv is max vec = new node
+			};						
+			if ( maxv>0 ) { 			// ----- found new node ---- 
+				  if ( this.nods.indexOf(nextk) == -1 ) {		// next grk not exist in nodes array -1				  
+					this.nods.push(nextk); 	this.nodv.push(0); this.nodw.push(0)
+						if ( this.grp[nextk].z< this.thrd ) { 	// this grk is in the nod1 erea
+							   //sphV = sphereVec( this.grp[nextk],0.02, 0xffffff )
+							   this.nod1.push(nextk); this.ndkv++; 
+							   this.nod1k.push(1); this.nod1c.push(0)
+							   this.nod1v.push(0); this.nod1w.push(0) 
+						}
+						//else { sphV = sphereVec( this.grp[nextk],0.01, 0xff0000 ) }
+						//this.nodspt.push( sphV )
+				  }
+				this.grk++; 
+				this.grp[this.grk] = this.grp[nextk];		// nextk is new node 
+				this.grlink[ this.grk ] = nextk;
+				this.ndf=1;		// ndf=1 means this.grk is new node  
+			}			
+		}
+	}					// *** end of getv ***
+	
+	 this.sumV = function( S ) {		// *** returns Vec of min.distance(=maxV) S:grp ***
+	   var v = new THREE.Vector3(0,0,0), d, mk, mx,my;
+	   var vmax = new THREE.Vector3(0,0,0)
+	     this.dmin=1000; mk=0; 	
+		for ( let k=0; k<256; k++ ) { mx = Math.floor(k/16);  my = (k%16);
+		    if ( mt[ k ] == 1 ) { mk++; 
+			vmax.subVectors( h[k], S ); 		// vec h[k] - S																					
+			d = vmax.lengthSq();	d = d*d/25;  // sum of grad /15
+			vmax.divideScalar( d )
+			vmax.multiplyScalar( mtwA[this.cellNo][mx][my] )
+			v.add(vmax);
+			if ( d<this.dmin ) { this.dmin = d; this.dmk = k; }
+		   }
+		}		
+		if ( mk==0 ) { tn = 0 };	// Acive Mt is none										
+	return v;  
+	 }			// *** end of sumV ***
+
+	this.vnods = function(phs) {		// *** sets nod color & count nods,nod1 activated : opc:opacity ***
+	  let np,gp, mt, mx,my, inp,inp1, mtn, idx,nd1p,hsl;
+	  
+	    if ( phs==0 ) {   	this.nodv.fill(0); this.nod1v.fill(0); this.nod1k.fill(0) 
+			for ( let k=0; k<this.ndkv; k++ ) { this.nod1m[k] = new Array() } }
+	    else { 			this.nodw.fill(0); this.nod1c.fill(0) }		// rec mode this.nod1w.fill(0);
+		
+		mtn=this.dmck.length
+		for ( let k=0; k<this.dmck.length; k++ ) {
+			mt = this.dmck[k]; mx = Math.floor(mt/16);  my = (mt%16);			
+			np = this.dmcp[ mt ]; inp = this.nods.indexOf(np);	// grp no. connected to nearest mt
+
+			  if ( phs==0 ) { this.nodv[inp] = this.nodv[inp]+ mtwA[this.cellNo][mx][my] }
+							//this.nodspt[ inp ].material.color.setHSL( 0,1,1-mtwA[ this.cellNo ][mx][my] )
+			  
+			  if ( phs==1 && mtw[10][mx][my]>0 ) {	
+							this.nodw[inp] = this.nodw[inp]+ mtw[10][mx][my] 
+							//this.nodspt[ inp ].material.color.setHSL( 0,1,1-mtw[10][mx][my] )
+			  }
+
+			do { 
+				np = this.grlink[ np ];			// next gr
+				inp = this.nods.indexOf(np);		// index of nods grlink
+				if ( inp>-1 ) {
+					if ( phs==0 ) { 
+						this.nodv[inp] = this.nodv[inp]+ mtwA[this.cellNo][mx][my] }
+						//this.nodspt[ inp ].material.color.setHSL( 0,1,1-this.nodv[inp]/mtn )}
+					if ( phs == 1 && mtw[10][mx][my]>0) { 
+						this.nodw[inp] = this.nodw[inp]+ mtw[10][mx][my] }
+						//this.nodspt[ inp ].material.color.setHSL( 0,1,1-this.nodw[inp]/mtn ) }
+					
+				inp1 = this.nod1.indexOf(np) 
+				if ( inp1>-1 ){ 
+					if ( phs==0 ) { this.nod1k[ inp1 ]++; 	this.nod1m[ inp1 ].push(mt)
+								    this.nod1v[ inp1 ] = this.nod1v[ inp1 ]+mtwA[ this.cellNo ][mx][my] 
+								    //this.nodspt[ inp1 ].material.color.setHSL( 0,1,1-this.nodv[inp]/mtn )
+									}
+					if ( phs == 1 ) { 
+						if ( mtw[10][mx][my]>0.2 ) {  this.nod1c[ inp1 ]++ }
+								    //this.nodspt[ inp1 ].material.color.setHSL( 0,1,1-this.nodw[inp]/mtn )}
+									//this.nodspt[ inp1 ].material.color.setHSL( 0,0,1 )}
+					}
+				np=-1 }	
+				}		
+			}
+			while ( np > 0 )	
+//			
+			nd1p = inp1				// now nd1p has nod1 grk
+			idx = this.dmcp[ mt ] 	// grp no. connected to nearest mt
+				 idx = this.grlink[idx]; this.line[idx+1].material.color.setHSL( nd1p/10,0.5,0.4 )
+			do { 
+				if ( idx>0 ) { 
+					this.line[idx].material.color.setHSL( nd1p/10,0.5,0.4 )	
+					idx = this.grlink[idx] }
+			}
+			while ( idx>0 )
+		}	
+	 }					// *** end of vnods ***
+	 	
+	this.getoutw = function() {
+	   var imt,mx,my,nx,ny, dm,dmn,dmkk,dmkm,dmx,dmy, fw, hsl  
+		this.outw = 0
+		for ( let m=0; m<this.nod1v.length; m++ ) { this.nod1w[m]=0 }
+		 cux.clearRect( 50,this.cellNo*48,50,50 );
+		 
+		for ( let k=0; k<256; k++ ) {
+			mx = Math.floor(k/16); my = (k%16); fw = 0; 
+			hsl = 'hsl( 0, 0%,100% )'								// white
+			mtsph[this.cellNo][mx][my].material.color.set( hsl )
+					for ( let kk=0; kk<this.nod1m.length; kk++ ) {	// array of nod1
+						if ( this.nod1m[kk].indexOf(k)>-1 ) { fw=1		// MT active
+							if ( mtw[10][mx][my] >0.2 ) {				// red...white 
+								this.nod1w[ kk ] = this.nod1w[ kk ] + mtwA[this.cellNo][mx][my]
+												 *this.nod1c[kk]/this.nod1k[kk]
+									hsl = 'hsl( 0, 100%,' + Math.floor(100-mtwA[this.cellNo][mx][my]*50)+'%)' }
+							else { this.nod1w[ kk ] = this.nod1w[ kk ] - mtwA[this.cellNo][mx][my] 
+													 //*this.nod1c[kk]/this.nod1k[kk]
+									hsl = 'hsl( 0, 0%,80% )'  }		// gray
+							//mtsph[this.cellNo][mx][my].material.color.set( hsl )		  
+						}
+					}
+					  if ( fw==0 && mtw[10][mx][my] >0.0 ) { 		// MT not active 
+						//hsl = 'hsl( 0, 0%,50% )'						// gray
+						dmn = 1000; dmkk = -1; dmkm = -1
+						for ( let kk=0; kk<this.nod1m.length; kk++ ) {
+							for ( let m=0; m<this.nod1m[kk].length; m++ ) {							
+								nx=Math.floor(this.nod1m[kk][m]/16); ny=this.nod1m[kk][m]%16
+								dm =  (nx-mx)*(nx-mx)+(ny-my)*(ny-my)
+								if ( dm<dmn ) { dmn = dm; dmkk=kk; dmx=mx; dmy=my }
+							}
+						}
+						if ( dmn>1.0 ) { 
+							this.nod1w[ dmkk ] = this.nod1w[ dmkk ] - mtw[10][mx][my]*dmn 
+							hsl = 'hsl( 0, 0%,20% )'			// dark gray
+							//mtsph[this.cellNo][mx][my].material.color.set( hsl )}
+						}
+					 }		
+			mtsph[this.cellNo][mx][my].material.color.set( hsl )
+			cux.fillStyle = hsl; cux.fillRect(my*3+2+48,mx*3+2+this.cellNo*48,3,3)
+		}
+		for ( let m=0; m<this.nod1v.length; m++ ) { this.outw = this.outw + this.nod1w[m] } 
+		this.outw = this.outw/this.dmck.length
+		return this.outw
+	}	
+	
+}			// ****** End of Cell Object ******
+
+// ----------------- main routine -----------------------------------------------------------------
+var cell = new Array, mt = new Array, h= new Array(), soma= new Array(10), mt09= new Array(10); 	
+var tn, mtk, thd;	// ** threshhold **
+var imgsp = new Array, mtsph = new Array, imgmt = new Array; 		// created at MNIST.js L73-77
+var mtw = new Array, mtwA = new Array,  mtwK = new Array(10), mtkA = new Array;
+var str,lcnt, mx,my, cu,cux,cv,cvx, cw,cwx, hsl, lmat, rcNo;
+var cn = 0, cm = -1, tid, tmid = new Array(10),	tmik = new Array(10), tmod
+
+  cu = document.getElementById("digits"); cux = cu.getContext("2d");
+  cv = document.getElementById("digTA"); 	cvx = cv.getContext("2d");
+  cw = document.getElementById("rep"); 	cwx = cw.getContext("2d");
+  document.getElementById("Res").style.fontWeight = 'bold';
+  rcNo =  document.getElementById("trNo"); 
+	rcNo.addEventListener("change", Rcg )
+	rcNo.addEventListener('keydown', function(event) { if (event.key === 'Enter') { Rcg() } } )
+
+   mtk=16; thd = 0.4;		// mtk:num of MT / thd : threshhold
+   
+	for ( let c=0; c<11; c++ ) {
+	  mtw[c]=new Array; mtwA[c] = new Array;  mtkA[c] = new Array; mtwK[c]=0
+		for ( let x=0; x<16; x++ ) { 
+			mtw[c][x]=new Array;  mtwA[c][x] = new Array;  mtkA[c][x] = new Array;
+			for ( let y=0; y<16; y++ ) {  
+				mtw[c][x][y] = 0; mtwA[c][x][y] = 0; mtkA[c][x][y] = 0 } }	  	
+	   newCell(c) }
+	  
+	for ( let k=0; k<=256; k++ ) { mx = Math.floor(k/16)/2;  my = (k%16)/2;
+		h[k] =  new THREE.Vector3( mx, my, 0 ); mt[k] = 0 }		// coodinate of Mt(k)
+		
+function newCell(c) {
+	  cell[c] = new Cell(); 
+	  cell[c].cellNo = c;   cell[c].col = 0.6 + c*0.005;
+	  cell[c].grp[0].x = 3.5-Math.sin(c/1.6)/5; cell[c].grp[0].y = 3.5+Math.cos(c/1.6)/5; 	
+	  cell[c].grp[0].z = -3; 
+	  
+	  if ( c==10 ) {
+	    cell[c].grp[0].x = 3.5; cell[c].grp[0].y = 3.5
+		for ( let x=0; x<mtk; x++ ) {			// update mtwA with rc
+			for ( let y=0; y<mtk; y++ ) { mtwA[c][x][y]=0; mtkA[c][x][y]=0 } }  }
+}
+/*
+function clrMT(c) {			// clear MT color
+  const hsl = 'hsl( 1, 100%,100% )' ;
+	for ( let x=0; x<mtk; x++ ) {	
+		for ( let y=0; y<mtk; y++ ) {	mtsph[c][x][y].material.color = new THREE.Color(hsl) }  }
+	for ( let l=0; l<cell[c].line.length; l++ ) { cell[c].line[l].visible=false }
+}
+*/
+// ----------------- Leaning functions -----------------------------------------------------------------
+
+function Train09() {		// Train button on single click
+	camera.position.set( 9, 8, 4 )
+	document.getElementById("TrAl").disabled = true
+	if ( cm>-1 ) {
+		for ( let l=0; l<cell[cm].line.length; l++ ) { cell[cm].line[l].material.opacity=0.1; 
+				cell[cm].line[l].material.transparent=true }	// hide DDR and nodes
+	}		
+	
+		LearnMTr(cn);		// Learn..get weight array	
+		for ( let x=0; x<mtk; x++ ) {	//hsl = 'hsl( 1, 100%,100% )'
+			for ( let y=0; y<mtk; y++ ) {				
+				hsl = 'hsl( 0, 100%,' + Math.floor(100-mtwA[cn][x][y]*50)+'%)'
+				mtsph[cn][x][y].material.color.set( hsl ) } }
+				
+		//DdrA(cn); cell[cn].vnods(0) 	// OR draw each dendrites OR animation mode bellow line
+			tn = 1; tid = setInterval(anim,0.01,cn); document.getElementById("Tr09").disabled = true; anim(cn);
+			//cell[cn].vnods(0)
+	cm = cn; cn++;
+   if ( cn==10 ) { document.getElementById("Tr09").disabled = true  }	// recog target
+   else { document.getElementById("Tr09").innerHTML = 'Train next : '+cn;  } 
+} 
+
+function TrainAll() {	// Train 0...9 
+  camera.position.set( 7, 7, 2 );
+  document.getElementById("Tr09").disabled = true
+  for ( let cn=0; cn<10; cn++ ) {	
+	LearnMTr(cn);		// Learn..get weight array & store img to mtwA
+	DdrA(cn); 			// draw each dendrites 	
+	cell[cn].vnods(0)	// culc nods data
+	hsl = 'hsl( 1, 100%,100% )' ;	camera.position.set( 7, 7, 2 )
+	for ( let x=0; x<mtk; x++ ) {	
+			for ( let y=0; y<mtk; y++ ) {	mtsph[cn][x][y].material.color.set(hsl) } } 
+	for ( let l=0; l<cell[cn].line.length; l++ ) { cell[cn].line[l].material.opacity=0.1 }	// hide DDR and nodes
+  }	
+  document.getElementById("TrAl").disabled = true; 
+} 
+
+function anim(ca) {
+	cell[ca].getv(); if( tn == 0 )  { clearInterval(tid); tid = null
+		  document.getElementById("Tr09").disabled = false; cell[ca].vnods(0) }
+}
+	
+function LearnMTr(nm) {		// ----- LearnMTr ----- nm is training chr 
+  var lcnt =5;					// train lcnt times
+  for ( let lk=0; lk<lcnt; lk++ ) {
+	getImgRnd(nm)		// load image data of charactor nm random to img temp array		
+	for ( let x=0; x<14; x++ ) {
+		for ( let y=0; y<14; y++ ) {				// dots image on y-z
+			if ( img[nm][x*2][y*2]/255 >0.0 )	 { 
+				dot( 0-lk/2, y/28+nm/2, 0.5-x/28, 2, 0.0 ) 	// img val 0...255 
+			    mtw[nm][x][y] = img[nm][x*2][y*2]/255 }		// mtw[16][16] <- img[28][28] !! 
+			else { mtw[nm][x][y] = 0 }
+		}	
+	}
+	 mwA(nm);		// store all img to mtwA no disp mode
+  }	
+	  hsl = 'hsl( 0, 100%,100%)';
+	  soma[nm]=sphereVec( 
+		new THREE.Vector3( cell[nm].grp[0].x, cell[nm].grp[0].y, cell[nm].grp[0].z ), 0.04, hsl ); 
+}							// ----- end of LearnMTr -----
+
+function DdrA(cn) {		// draw dendrites
+		tn = 256
+		if ( tn>0 ) {
+		  do { cell[cn].getv() }
+		  while ( tn>0 ) 
+		} 
+}	
+function mwA(c) {		// ----------- update mtwA[c] from mtw[c] --------------
+  var mta,hsl
+	mtsph[c] = new Array(); mtwK[c]++
+	SC(c)
+	for ( let x=0; x<mtk; x++ ) {		 mtsph[c][x] = new Array()	// update mtwA with rc
+		for ( let y=0; y<mtk; y++ ) { mta = x*16 + y;				// Mt adr 0..255
+			//if ( mtw[c][x][y] > 0.2 ) {
+				mtwA[c][x][y] = mtwA[c][x][y]*mtkA[c][x][y] + mtw[c][x][y] 			
+				mtkA[c][x][y] = mtkA[c][x][y]+1; mtwA[c][x][y] = mtwA[c][x][y]/mtkA[c][x][y] 	
+			//}
+			if ( mtwA[c][x][y]>0.2 ) { 
+					mt[mta] = 1; 	hsl = 'hsl( 0, 100%,' + Math.floor(100-mtwA[c][x][y]*50)+'%)' }
+			else {	mt[mta] = 0; 	hsl = 'hsl( 0, 100%,100%)'	}
+			
+			mtsph[c][x][y] = imgsp[x][y]; 	// <- js/MNIST.js .material.color = new THREE.Color(hsl); 
+			cux.fillStyle = hsl; cux.fillRect(y*3+2,x*3+2+c*48,3,3); 
+		}
+	 }
+	 //if ( c<10 ) { cux.font = "10px Courier New";cux.strokeText(mtwK[c],42,c*48+40) }
+}
+
+// ----------------- End of Leaning functions -----------------------------------------------------------------
+
+var rck = 0, lrc = -1, mck = 0,mdk, inp,  cn, ch=-1, ref=0;
+
+function Rcg(ch) { 		// ++++++++++++ recognition : rc is recg target +++++++++++++++++++++++++
+ var  rc, tc, mx,my, r0, rmax, cmax, np, mt, src;
+ var  knd, nod1, inp, ndv, ndk,nd1k;
+
+   ch=-1; 	//if ( ref==1 ) { rewA(lrc) }
+	str = document.getElementById("trNo").value; rc = parseInt( str )		// rc is recg target		
+
+	if ( rck==0 || ch==-1 ) { document.getElementById("Res").value  = ''; }
+	
+	imNo = getImgRnd(rc);		// load target chr image to mtw[10]	array
+	for ( let x=0; x<14; x++ ) {			// store and disp target image
+		for ( let y=0; y<14; y++ ) { 
+			imgv = img[rc][x*2][y*2]/255; 
+			if ( imgv>0.2 ) { mtw[10][x][y]=imgv } else  { mtw[10][x][y]=0 } 	// img 0...255
+		}	
+	}
+		for ( let x=0; x<14; x++ ) {			// store and disp target image
+			for ( let y=0; y<14; y++ ) { mtwA[10][x][y] = 0 ; mtkA[10][x][y] = 0 }}
+	SC(10);	//mwA(10)	
+	for ( let x=0; x<14; x++ ) {			// store and disp target image
+		for ( let y=0; y<14; y++ ) { 
+			hsl = 'hsl( 0, 100%,100% )'		// white
+			if ( mtw[10][x][y]>0 ) { hsl = 'hsl( 0, 100%,' + Math.floor(100-mtw[10][x][y]*50)+'%)' }
+			  cvx.fillStyle =  hsl; cvx.fillRect( y*3,x*3,3,3 ) 
+			 // mtsph[cn][x][y].material.color.set( hsl )
+			//mtsph[rc][x][y].material.color = new THREE.Color(hsl)
+		}
+	}
+	if ( lrc>-1 ) { 
+		for ( let l=0; l<cell[lrc].line.length; l++ ) { cell[lrc].line[l].material.opacity=0.0 }
+	}
+	for ( let l=0; l<cell[rc].line.length; l++ ) { cell[rc].line[l].material.opacity=0.5 } 
+		
+  cmax = -1;  rmax = -256; r0max = -50; r1max = -50; r2max = -50,r3max = -50;	
+	lrc = rc		// store last chr
+	res(rc)		// call recognition result routine 
+		
+}			// ******************** end of Rcg L520 ***************************
+
+var rcnt=0,rcrt=0,rcgp=0, rcf=0; st=''; nk = new Array(10).fill(0); nc = new Array(10).fill(0);
+function res(rc) {
+  var r0,kd, ndw,ndx, sdw, sdv, rmax = -50, cmax = -1,ndv; 
+	
+	for ( let tc=0; tc<10; tc++ ) {	
+		kd = 0; sdw=''; sdv=''
+		cell[tc].vnods(1)		// culc nod1c
+		  ndw  = cell[tc].getoutw();
+			if ( ndw>0 ) { soma[tc].material.color.setRGB( (ndw+0.1)*1000 , 0, 0 ) } 	// r,g,b 0..1
+			else {		  soma[tc].material.color.setRGB ( 0 , 0, 0 )}
+
+		if ( ndw > rmax ) {  rmax = ndw; cmax =  tc  }	
+
+		sdw = ndw.toFixed(2)		//Math.round( ndw*100 )/100; 
+			if ( sdw>0 ) { sdw = ' '+sdw; sdw = sdw.slice(-6) }	
+
+		st = st + tc +' : '+sdw+ '\t\t'+ nc[tc]+'/'+nk[tc]+'  [ ' + mtwK[tc] +' ]\n'
+		document.getElementById("Res").value = st;
+	 }
+
+	 rcnt++; nk[rc]++
+	 if ( rc==cmax ) {  rcrt++; nc[rc]++ } else {rewA(rc) }
+	 rcgp = Math.round( rcrt/rcnt*1000 )/10;		
+	 st = st+'char '+rc +' --> ' + cmax + '\n\t ' + rcrt+'/'+rcnt+' = '+rcgp+'%\n'
+		document.getElementById("Res").value = st; Res.scrollTop = Res.scrollHeight;	 
+		cwx.strokeStyle='blue'; cwx.strokeRect( rcnt,100-rcgp,1,1 )   
+    lrc = rc
+}
+
+function rewA(c) { 		//----- update chr image with correct No -----
+	  for ( let l=0; l<cell[c].line.length; l++ ) { cell[c].line[l].material=[] }
+	  for ( let x=0; x<mtk; x++ ) {					// copy mtw[10] to mtw[rc]
+		for ( let y=0; y<mtk; y++ ) { mtw[c][x][y] = mtw[10][x][y] } }			
+	cell[c].line[0].geometry.addEventListener('dispose', (event) => { cell[c].line.length=0 } );
+
+	  cell[c].nod1v = []; cell[c].nod1m = []; cell[c].nod1c = []; cell[c].nod1k = []; cell[c].nod1 = [];
+	  cell[c].nodv = []; cell[c].nodw = []; cell[c].nod1v = []; cell[c].nod1w = [];	
+	  cell[c].dmcp = []; cell[c].dmck = []; 
+	  cell[c].grlink= []; cell[c].grp= []; cell[c].nods = []; cell[c].nodmt = [];
+
+	  scene.remove( cell[c].line ); 
+		for ( i=0; i<cell[c].line.length; i++ ) { 
+			cell[c].line[i].geometry.dispose() }	
+	rst(c);
+}	
+function rst(c) {	 
+	  cell[c].cellNo = c;   cell[c].col = 0.6 + c*0.005; cell[c].grk=0; cell[c].dmk=0
+	  cell[c].grp =  new Array( new THREE.Vector3( 0,0,0 ) )
+	  cell[c].grp[0].x = 3.5-Math.sin(c/1.6)/5; cell[c].grp[0].y = 3.5+Math.cos(c/1.6)/5; 	
+	  cell[c].grp[0].z = -3; 
+	  mwA(c) ; 		// update mtwA[rc] with correct chr_cr 
+		//tn = 1; tid = setInterval(anim,0.01,c); anim(c);
+	  DdrA(c); cell[c].vnods(0);
+	return 0	
+}
+
+function RcgAuto() { 	// exec auto rck times
+  let ch, rck, rcrn,rcn,str
+  let mtr = new MersenneTwister(); 
+	
+	rcrn = rcrt; rcn = rcnt; str = "Calc auto random 20 image "+String(rcnt+20)+"-"			// save counter
+	rck=20; 
+	do {  ch = mtr.nextInt(0,10);		//ch = Math.floor(Math.random()*10); 
+			document.getElementById("trNo").value=ch
+		Rcg(ch); rck-- }
+	while ( rck>0 )
+		cwx.strokeStyle='red';	 
+		  cwx.strokeRect( rcn,100-(rcrt-rcrn)/20*100,20,1 )
+		document.getElementById("Cal").textContent=str
+}
+
+function SC(nm) {		// Saccade -> rotate image => mtw[nm]
+  var tx,ty,bx,by, sy,ey, inc,sfc,g=7.5, dx,dk, im=new Array()
+  for ( let x=0; x<mtk; x++ ) { im[x]=new Array()			
+		for ( let y=0; y<mtk; y++ ) {	im[x][y] = 0 } }
+		
+	if ( nm==10 ) { cux.clearRect( 50,2+nm*48,100,50 ); }
+		tx=0;bx=0;ty=0;by=0; sy = 0; ey = 0; cux.beginPath();
+		
+	for ( let x=0; x<mtk; x++ ) {			// top line
+		for ( let y=0; y<mtk; y++ ) {		// left to right		   mtw --- y --->
+			if ( mtw[nm][x][y]>0.0 && tx==0 ) {  sy=y; tx=x } }		//  |
+		for ( let yy=mtk-1; yy>0; yy-- ) { 	// right to left	//  x
+			if ( mtw[nm][tx][yy]>0.0 && ey==0 ) { ey = yy } }		//  |
+	}															//  v
+	ty = Math.round(( sy + ey )/2)
+	
+	sy = 0; ey = 0
+	for ( let x=mtk-1; x>0; x-- ) {			// bottom line
+		for ( let y=0; y<mtk; y++ ) {			// left to right
+			if ( mtw[nm][x][y]>0.0 && bx==0 ) {  sy=y; bx=x } }
+		for ( let yy=mtk-1; yy>0; yy-- ) { 	// right to left
+			if ( mtw[nm][bx][yy]>0.0 && ey==0 ) { ey = yy } }
+	}	
+	by = Math.round(( sy + ey )/2);	
+	inc = (ty-by)/(bx-tx)	// inclination
+
+	if ( Math.abs(inc)>0.1 ) {
+		for ( let x=0; x<mtk; x++ ) {	
+			for ( let y=0; y<mtk; y++ ) {
+				hsl = 'hsl( 1, 100%,' + Math.floor( 100-mtw[nm][x][y]*50 )+'%)'
+				cux.fillStyle = hsl; cux.fillRect(y*3+2+48,x*3+2+nm*48,2,2) } }
+		cux.strokeStyle='blue';
+		cux.moveTo( ty*3+50,tx*3+2+nm*48 ); cux.lineTo( by*3+50,bx*3+2+nm*48 )
+		cux.stroke()
+	  for ( let x=tx; x<=bx; x++ ) {		// mtwA is learned img ave of each chr
+		sfc = Math.round( (g-x)*inc )		// g : gravity
+		if ( sfc>0 ) { 
+				for ( let k=0; k<sfc; k++ )  { mtw[nm][x].shift(); mtw[nm][x].push(0) } }	// move left sfc times
+		else {	for ( let k=0; k<-sfc; k++ ) { mtw[nm][x].unshift(0); mtw[nm][x].pop() } }	// move right sfc times
+	  }	
+	};	 
+	if ( bx-tx<8 ) { dx=11/(bx-tx); dk = -1; console.log(nm)		// fix chr height 
+		for ( let xx=tx; xx<bx; xx++ ) { dk++;
+			for ( let y=0; y<mtk; y++ ) { im[ Math.floor( 2+dk*dx )][y]= mtw[nm][xx][y]
+										im[ Math.floor( 2+dk*dx+1 )][y]= mtw[nm][xx][y] 
+										hsl = 'hsl( 1, 100%,' + Math.floor( 100-mtw[nm][xx][y]*50 )+'%)'
+										cux.fillStyle = hsl; cux.fillRect(y*3+2+48,xx*3+48+10*48,2,2) }
+		} 
+		for ( let x=0; x<mtk; x++ ) { 			
+			for ( let y=0; y<mtk; y++ ) {	mtw[nm][x][y] = im[x][y] } };		
+	}; cux.closePath();
+}			// end of SC
+
+</script>
+</body>
+</html>

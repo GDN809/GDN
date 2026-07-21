@@ -1,5 +1,13 @@
 <!DOCTYPE html>
-     <!-- dendritic neural network  -->
+ 
+	 <!---------------------------------------------------------------------------------
+	Genating Neural Netwerk v0.8						2026/July
+						© 2026 bobie820g@gmail.com 	M.Amano & T.O.
+						Released under the MIT license
+						https://opensource.org/licenses/mit-license.php 
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.0.1/math.js"></script>
+			<script src="https://unpkg.com/mathjs@11.4.0/lib/browser/math.js"></script>
+-------------------------------------------------------------------------------------!>	
 <head>
     <meta charset="utf-8">
     <title>dendritic neural network</title>
@@ -103,7 +111,7 @@ and its image is displayed to the right of the input field and on the x-y plane 
 GDN compares each learned character with the target character using the following procedure.<br>
 <br>
 a) If the pixels of the target character also exist on the pixels associated with a "digit" neuron, 
-the synaptic information reaches one of the nodes in Layer 1.< br>
+the synaptic information reaches one of the nodes in Layer 1.<br>
 
 If the pixel value is 0.2 or greater, it is added to the corresponding Layer 1 node array as 
 excitation information; if it is less than 0.2, it is subtracted as inhibition information.<br>
@@ -151,22 +159,29 @@ only one br to each digit, it appears that it must also assign neurons to these 
 <img src="fig43.png" width="60%" height="60%">
 <br><br>
 
-<h3>How to use a dendrite network generation App for MNIST image recognition
-<br><br> ---- We apologize, but the ZIP file is scheduled to be released soon. ----</h3>
+<h3>How to use a dendrite network generation App for MNIST image recognition</h3>
+<br>
+---- This program is written in somewhat "classic" javascript. Easy to read for all, isn't ?<br>
+But sorry, Variable names and comments are also not very sophisticated. 
+<br>Improvements are planned in the next version. note that.----<br><br>
 
-i) Download GDN.zip and unzip it. Open GDN.html.<br>
+i) Download GDN.zip and unzip it. Open GDN_v08.html.<br>
 ii)Load the MNIST label file (t10k-labels.bin), and then load the image file (t10k-images.bin).<br>
+<br>
 iii)Click the [Train 0..9] button. Five images of “0” will be loaded at random, and the generation 
-of dendrites will be displayed in an animation.<br><br>
+of dendrites will be displayed in an animation.<br>
+or <br>Click [Train All].GDN automaticaly loads Trainning data from 0 to 9 in no animation. It takes a bit seconds.
+<br><br>
 iv) Keep clicking until the character “9” is loaded, then finish the training. To automatically 
-generate characters from 0 to 9 without displaying the animation, click the [Train All] button.
+generate characters from 0 to 9 without displaying the animation, click the [ Train All ] button.
 <br><br>
 v)When you enter a character to verify recognition or use the increase/decrease buttons, 
 the similarity scores and recognition results for characters 0 through 9 will be displayed 
 in the text area. The cumulative recognition rate is also displayed each time you run the test.
 <br> or<br>
-Click the [Automatically Generate 20 Random Images] button, wait a few seconds, and
-the results for 20 randomly selected test characters will be displayed. 
+Click the [ Calc auto random 20 image ] button, wait a few seconds, and
+the results for 20 randomly selected test characters will be displayed.
+<br>Segment recognition rates are displayed as red lines. 
 </div>
 </body>
 </html>
